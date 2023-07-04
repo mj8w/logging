@@ -11,7 +11,9 @@
 #include <string>
 #include <sstream>
 
-#define FMT_HEADER_ONLY
+// enable this for header only use of FMT library(slower compile)
+//  - then you don't need the library in the build...
+// #define FMT_HEADER_ONLY
 #include "fmt/format.h"
 
 
