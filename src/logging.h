@@ -38,6 +38,11 @@ private:
 	};
 };
 
+#define LOG_INFO m_logger.log(LogTypes::INFO, __FILE__, __LINE__)
+#define LOG_WARN m_logger.log(LogTypes::WARN, __FILE__, __LINE__)
+#define LOG_ERR m_logger.log(LogTypes::ERR, __FILE__, __LINE__)
+#define LOG_FAIL m_logger.log(LogTypes::FAIL, __FILE__, __LINE__)
+
 class Log {
 private:
     std::stringstream m_stream;
