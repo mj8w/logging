@@ -43,15 +43,34 @@ private:
 #define LOG_ERR m_logger.log(LogTypes::ERR, __FILE__, __LINE__)
 #define LOG_FAIL m_logger.log(LogTypes::FAIL, __FILE__, __LINE__)
 
-class Log {
+class Logger {
 private:
-    std::stringstream m_stream;
-    std::ostream& m_outputStream;
+    std::stringstream 	m_stream;
+    std::ostream& 		m_outputStream;
+    LogTypes			m_types;
+    LogTypes::Types		m_type;
+    std::string			m_pos;		// filename and line #
 
 public:
-    Log(std::ostream& outputStream = std::cout) : m_outputStream(outputStream) {}
+    Logger(std::ostream& outputStream = std::cout) :
+    	m_stream(),
+		m_outputStream(outputStream),
+		m_types(),
+		m_type(LogTypes::INFO),
+		m_pos(""){}
 
-    Log& operator<<(const std::string& str) {
+    Logger& log(const LogTypes::Types type, const std::string& filePath, const uint32_t linenum) {
+    	m_type = type;
+        size_t lastSep = filePath.find_last_of("/\\");
+        if (lastSep != std::string::npos) {
+        	m_pos = fmt::format("{}#{}", filePath.substr(lastSep + 1), linenum);
+        } else {
+        	m_pos = fmt::format("{}#{}", filePath, linenum);
+        }
+    	return *this;
+    }
+
+    Logger& operator<<(const std::string& str) {
         m_stream << str;
         return *this;
     }
@@ -61,7 +80,7 @@ public:
         m_stream << fmt::format(formatString, args...);
     }
 
-    Log& operator<<(std::ostream& (*manipulator)(std::ostream&)) {
+    Logger& operator<<(std::ostream& (*manipulator)(std::ostream&)) {
         if (manipulator == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
             m_outputStream << m_stream.str() << std::endl;
             m_stream.str("");
