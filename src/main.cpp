@@ -1,15 +1,25 @@
 //============================================================================
-// Name        : logging.cpp
-// Author      : Mike Wilson
-// Version     :
+// Name        : main.cpp
+// Author      : Micheal Wilson
 // Copyright   : Copyright 2023
-// Description : Hello World in C++, Ansi-style
+// Description : Logging Example Code
 //============================================================================
 
 #include <iostream>
 #include "logging.h"
+#include <assert.h>
 
 int main() {
-	std::cout << fmt::format("Logging example") << std::endl; // prints Logging example
-	return 0;
+    // test format library
+    std::cout << fmt::format("format example {}", 42) << std::endl; // prints Logging example
+    assert(std::string("format example 42") == fmt::format("format example {}", 42));
+
+    // test LogTypes object
+    LogTypes types;
+    std::cout << types.name(LogTypes::WARN);
+    assert(std::string("WARN") == types.name(LogTypes::WARN));
+
+    Logger m_logger;
+
+    return 0;
 }
