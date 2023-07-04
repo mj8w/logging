@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -16,6 +17,26 @@
 // #define FMT_HEADER_ONLY
 #include "fmt/format.h"
 
+struct LogTypes {
+	enum Types {
+		INFO,
+		WARN,
+		ERR,
+		FAIL
+	};
+
+	std::string name(Types type) {
+		return names.at(type);
+	}
+
+private:
+	std::map<Types, std::string> names = {
+			{INFO, "INFO"},
+			{WARN, "WARN"},
+			{ERR, "ERR"},
+			{FAIL, "FAIL"},
+	};
+};
 
 class Log {
 private:
