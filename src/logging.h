@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <iomanip>
 #include <map>
 #include <string>
 #include <sstream>
@@ -44,22 +45,24 @@ private:
 #define LOG_ERR m_logger.log(LogTypes::ERR, __FILE__, __LINE__)
 #define LOG_FAIL m_logger.log(LogTypes::FAIL, __FILE__, __LINE__)
 
+using SteadyTime = std::chrono::time_point<std::chrono::steady_clock>;
+
 class Logger {
 private:
-    std::stringstream 	m_stream;           // assemble logs here
-    std::ostream& 		m_outputStream;     // output to here when the whole log has been created
-    LogTypes			m_types;            // helper for using types
-    LogTypes::Types		m_type;             // the type of this log
-    std::string			m_pos;		        // filename and line #
-    bool                m_use_time;         // use this field?
+    std::stringstream 	m_stream;   // assemble logs here
+    std::ostream& 		m_output;   // output to here when the whole log has been created
+    LogTypes			m_types;    // helper for using types
+    LogTypes::Types		m_type;     // the type of this log
+    std::string			m_pos;		// filename and line #
+    bool                m_use_time; // use this field?
     bool                m_use_type;
     bool                m_use_pos;
-    std::chrono::time_point<std::chrono::steady_clock> m_start_time;    // when the object was created
+    SteadyTime          m_start_time;    // when the object was created
 
 public:
     Logger(std::ostream& outputStream = std::cout) :
     	m_stream(),
-		m_outputStream(outputStream),
+		m_output(outputStream),
 		m_types(),
 		m_type(LogTypes::INFO),
 		m_pos(""),
@@ -94,6 +97,11 @@ public:
         return *this;
     }
 
+    Logger& operator<<(const char ch) {
+        m_stream << ch;
+        return *this;
+    }
+
     // functor allows passing the fmt library operands to the log
     template <typename... Args>
     void operator()(const std::string& formatString, const Args&... args) {
@@ -109,17 +117,54 @@ public:
                 std::chrono::duration<double> diff = now - m_start_time;
                 long whole = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
                 long fract = std::chrono::duration_cast<std::chrono::duration<long, std::micro>>(diff).count() % 1000000;
-                m_outputStream << fmt::format("{:d}.{:04d} - ", whole, fract);
+                m_output << fmt::format("{:d}.{:04d} - ", whole, fract);
             }
             if (m_use_type) {
-                m_outputStream << m_types.name(m_type) << ": ";
+                m_output << m_types.name(m_type) << ": ";
             }
-            m_outputStream << m_stream.str();
+            m_output << m_stream.str();
             if (m_use_pos) {
-                m_outputStream << " | " << m_pos;
+                m_output << " | " << m_pos;
             }
-            m_outputStream << std::endl;
+            m_output << std::endl;
             m_stream.str("");
+        }
+        return *this;
+    }
+
+    // hexadecimal memory dump log
+    template<typename T>
+    Logger& hex(const std::string name, const T* ptr, const size_t size) {
+        *this << fmt::format("{} is {} bytes @{:x}\n", name, size, reinterpret_cast<uintptr_t>(ptr));
+
+        const unsigned char* bytes = reinterpret_cast<const unsigned char*>(ptr);
+
+        for (size_t i = 0; i < size; i++) {
+            // Print the offset at the beginning of each line
+            if (i % 16 == 0) {
+                *this << fmt::format("{:04x}: ", i);
+            }
+
+            size_t index = i + 1;
+            *this << fmt::format("{:02x}", static_cast<int>(bytes[i]));
+
+            if (index % 4 == 0 && index % 16 != 0) {
+                *this << " : ";
+            } else {
+                *this << ' ';
+            }
+
+            if (index % 16 == 0) {
+                if (index == size) {
+                    *this << std::endl;
+                } else {
+                    *this << '\n';
+                }
+            }
+        }
+        // Add a newline if the last line was not complete
+        if (size % 16 != 0) {
+            *this << std::endl;
         }
         return *this;
     }

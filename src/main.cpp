@@ -23,6 +23,7 @@ int main() {
 
 
     LOG_INFO("First log");
+    LOG_INFO.hex("LogTypes", &types, sizeof(types));
 
     return 0;
 }

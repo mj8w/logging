@@ -12,3 +12,6 @@ Here are some facts I learned.
 - Statics can be global or local, and so can Singletons.
 - You can force a class to only be instantiated once with a singleton
     - "restricting" developers like little children
+
+## Logging Object
+LOG_INFO macro should point at a shared pointer
