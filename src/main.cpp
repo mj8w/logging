@@ -16,10 +16,13 @@ int main() {
 
     // test LogTypes object
     LogTypes types;
-    std::cout << types.name(LogTypes::WARN);
+    std::cout << types.name(LogTypes::WARN) << std::endl;
     assert(std::string("WARN") == types.name(LogTypes::WARN));
 
     Logger m_logger;
+
+
+    LOG_INFO("First log");
 
     return 0;
 }

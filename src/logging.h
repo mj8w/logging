@@ -11,6 +11,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <chrono>
 
 // enable this for header only use of FMT library(slower compile)
 //  - then you don't need the library in the build...
@@ -50,6 +51,10 @@ private:
     LogTypes			m_types;
     LogTypes::Types		m_type;
     std::string			m_pos;		// filename and line #
+    bool                m_use_time;         // use this field?
+    bool                m_use_type;
+    bool                m_use_pos;
+    std::chrono::time_point<std::chrono::steady_clock> m_start_time;    // when the object was created
 
 public:
     Logger(std::ostream& outputStream = std::cout) :
@@ -57,7 +62,19 @@ public:
 		m_outputStream(outputStream),
 		m_types(),
 		m_type(LogTypes::INFO),
-		m_pos(""){}
+		m_pos(""),
+        m_use_time(true),
+        m_use_type(true),
+        m_use_pos(true),
+        m_start_time(std::chrono::steady_clock::now())
+        {}
+
+    // allow caller to filter what fields are shown in the output
+    void fields(const bool time, const bool type, const bool pos) {
+        m_use_time = time;
+        m_use_type = type;
+        m_use_pos = pos;
+    }
 
     Logger& log(const LogTypes::Types type, const std::string& filePath, const uint32_t linenum) {
     	m_type = type;
@@ -82,7 +99,21 @@ public:
 
     Logger& operator<<(std::ostream& (*manipulator)(std::ostream&)) {
         if (manipulator == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
-            m_outputStream << m_stream.str() << std::endl;
+            if (m_use_time) {
+                auto now = std::chrono::steady_clock::now();
+                std::chrono::duration<double> diff = now - m_start_time;
+                long whole = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
+                long fract = std::chrono::duration_cast<std::chrono::duration<long, std::micro>>(diff).count() % 1000000;
+                m_outputStream << fmt::format("{:d}.{:04d} - ", whole, fract);
+            }
+            if (m_use_type) {
+                m_outputStream << m_types.name(m_type) << ": ";
+            }
+            m_outputStream << m_stream.str();
+            if (m_use_pos) {
+                m_outputStream << " | " << m_pos;
+            }
+            m_outputStream << std::endl;
             m_stream.str("");
         }
         return *this;
