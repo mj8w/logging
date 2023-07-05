@@ -1,9 +1,9 @@
-/*
- * logging.h
- *
- *  Created on: Jul 4, 2023
- *      Author: mail4
- */
+//============================================================================
+// Name        : logging.h
+// Author      : Micheal Wilson
+// Copyright   : Copyright 2023
+// Description : Logging Classes
+//============================================================================
 
 #pragma once
 
@@ -46,11 +46,11 @@ private:
 
 class Logger {
 private:
-    std::stringstream 	m_stream;
-    std::ostream& 		m_outputStream;
-    LogTypes			m_types;
-    LogTypes::Types		m_type;
-    std::string			m_pos;		// filename and line #
+    std::stringstream 	m_stream;           // assemble logs here
+    std::ostream& 		m_outputStream;     // output to here when the whole log has been created
+    LogTypes			m_types;            // helper for using types
+    LogTypes::Types		m_type;             // the type of this log
+    std::string			m_pos;		        // filename and line #
     bool                m_use_time;         // use this field?
     bool                m_use_type;
     bool                m_use_pos;
@@ -76,6 +76,7 @@ public:
         m_use_pos = pos;
     }
 
+    // to be used with macros above, this sets the context for the log
     Logger& log(const LogTypes::Types type, const std::string& filePath, const uint32_t linenum) {
     	m_type = type;
         size_t lastSep = filePath.find_last_of("/\\");
@@ -87,16 +88,20 @@ public:
     	return *this;
     }
 
+    // std::string passed to << operator
     Logger& operator<<(const std::string& str) {
         m_stream << str;
         return *this;
     }
 
+    // functor allows passing the fmt library operands to the log
     template <typename... Args>
     void operator()(const std::string& formatString, const Args&... args) {
-        m_stream << fmt::format(formatString, args...);
+        *this << fmt::format(formatString, args...) << std::endl;
     }
 
+    // detect end of line (endl is a manipulator function)
+    // and output the log when it is detected
     Logger& operator<<(std::ostream& (*manipulator)(std::ostream&)) {
         if (manipulator == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
             if (m_use_time) {
