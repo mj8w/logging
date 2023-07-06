@@ -40,17 +40,17 @@ private:
 	};
 };
 
-#define LOG_INFO m_logger.log(LogTypes::INFO, __FILE__, __LINE__)
-#define LOG_WARN m_logger.log(LogTypes::WARN, __FILE__, __LINE__)
-#define LOG_ERR m_logger.log(LogTypes::ERR, __FILE__, __LINE__)
-#define LOG_FAIL m_logger.log(LogTypes::FAIL, __FILE__, __LINE__)
+#define LOG_INFO logger.log(LogTypes::INFO, __FILE__, __LINE__)
+#define LOG_WARN logger.log(LogTypes::WARN, __FILE__, __LINE__)
+#define LOG_ERR logger.log(LogTypes::ERR, __FILE__, __LINE__)
+#define LOG_FAIL logger.log(LogTypes::FAIL, __FILE__, __LINE__)
 
 using SteadyTime = std::chrono::time_point<std::chrono::steady_clock>;
 
 class Logger {
 private:
     std::stringstream 	m_stream;   // assemble logs here
-    std::ostream& 		m_output;   // output to here when the whole log has been created
+    std::ostream&       m_output;   // output to here when the whole log has been created
     LogTypes			m_types;    // helper for using types
     LogTypes::Types		m_type;     // the type of this log
     std::string			m_pos;		// filename and line #
@@ -58,6 +58,10 @@ private:
     bool                m_use_type;
     bool                m_use_pos;
     SteadyTime          m_start_time;    // when the object was created
+
+    // Remove copy constructor and copy assignment operators
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
 
 public:
     Logger(std::ostream& outputStream = std::cout) :
@@ -116,8 +120,8 @@ public:
                 auto now = std::chrono::steady_clock::now();
                 std::chrono::duration<double> diff = now - m_start_time;
                 long whole = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
-                long fract = std::chrono::duration_cast<std::chrono::duration<long, std::micro>>(diff).count() % 1000000;
-                m_output << fmt::format("{:d}.{:04d} - ", whole, fract);
+                long fract = std::chrono::duration_cast<std::chrono::microseconds>(diff - std::chrono::seconds(whole)).count();
+                m_output << fmt::format("{:d}.{:06d} - ", whole, fract);
             }
             if (m_use_type) {
                 m_output << m_types.name(m_type) << ": ";
@@ -169,3 +173,5 @@ public:
         return *this;
     }
 };
+
+extern Logger logger;
