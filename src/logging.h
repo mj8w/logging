@@ -54,9 +54,10 @@ private:
     LogTypes			m_types;    // helper for using types
     LogTypes::Types		m_type;     // the type of this log
     std::string			m_pos;		// filename and line #
-    bool                m_use_time; // use this field?
-    bool                m_use_type;
-    bool                m_use_pos;
+
+    enum field_bits { TIME=1, TYPE=2, POS=4 }; // possible fields to show in the output
+
+    uint8_t             m_use_fields; // use this field?
     SteadyTime          m_start_time;    // when the object was created
 
     // Remove copy constructor and copy assignment operators
@@ -70,17 +71,12 @@ public:
 		m_types(),
 		m_type(LogTypes::INFO),
 		m_pos(""),
-        m_use_time(true),
-        m_use_type(true),
-        m_use_pos(true),
         m_start_time(std::chrono::steady_clock::now())
         {}
 
     // allow caller to filter what fields are shown in the output
-    void fields(const bool time, const bool type, const bool pos) {
-        m_use_time = time;
-        m_use_type = type;
-        m_use_pos = pos;
+    void setFields(uint8_t fields) {
+        m_use_fields = fields;
     }
 
     // to be used with macros above, this sets the context for the log
@@ -107,6 +103,7 @@ public:
     }
 
     // functor allows passing the fmt library operands to the log
+    // NOTE that this adds a line terminator, unlike the << operators.
     template <typename... Args>
     void operator()(const std::string& formatString, const Args&... args) {
         *this << fmt::format(formatString, args...) << std::endl;
@@ -116,18 +113,18 @@ public:
     // and output the log when it is detected
     Logger& operator<<(std::ostream& (*manipulator)(std::ostream&)) {
         if (manipulator == static_cast<std::ostream& (*)(std::ostream&)>(std::endl)) {
-            if (m_use_time) {
+            if (m_use_fields & TIME) {
                 auto now = std::chrono::steady_clock::now();
                 std::chrono::duration<double> diff = now - m_start_time;
                 long whole = std::chrono::duration_cast<std::chrono::seconds>(diff).count();
                 long fract = std::chrono::duration_cast<std::chrono::microseconds>(diff - std::chrono::seconds(whole)).count();
                 m_output << fmt::format("{:d}.{:06d} - ", whole, fract);
             }
-            if (m_use_type) {
+            if (m_use_fields & TYPE) {
                 m_output << m_types.name(m_type) << ": ";
             }
             m_output << m_stream.str();
-            if (m_use_pos) {
+            if (m_use_fields & POS) {
                 m_output << " | " << m_pos;
             }
             m_output << std::endl;
